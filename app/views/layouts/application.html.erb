@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>WebNotificationRails</title>
+    <title>WebNote</title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
@@ -10,9 +10,43 @@
     <%= javascript_include_tag "application", "data-turbo-track": "reload", defer: true %>
   </head>
 
-  <body>
-    <p class="notice"><%= notice %></p>
-    <p class="alert"><%= alert %></p>
-    <%= yield %>
+  <body class="d-flex flex-column h-100">
+    <header>
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+          <a class="navbar-brand" href="/">WebNote</a>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+          <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav me-auto">
+              <li class="nav-item active">
+                <a class="nav-link" href="/">Home</a>
+              </li>
+            </ul>
+            <p class="navbar-text float-right">
+            <% if user_signed_in? %>
+              <%= link_to "Edit profile", edit_user_registration_path, class: "navbar-link" %> |
+              <%= link_to "Logout", destroy_user_session_path, data: {turbo_method: :delete}, class: "navbar-link" %>
+            <% else %>
+              <%= link_to "Sign up", new_user_registration_path, class: "navbar-link" %> |
+              <%= link_to "Login", new_user_session_path, class: "navbar-link" %>
+            <% end %>
+            </p>
+          </div>
+        </div>
+      </nav>
+    </header>
+    <main class="flex-shrink-0">
+      <div class="container">
+        <% if notice %>
+          <p class="alert alert-success"><%= notice %></p>
+        <% end %>
+        <% if alert %>
+          <p class="alert alert-danger"><%= alert %></p>
+        <% end %>
+        <%= yield %>
+      </div>
+    </main>
   </body>
 </html>
