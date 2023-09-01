@@ -76,4 +76,6 @@ end
 
 gem "devise", "~> 4.9"
 
-gem "webpush", "~> 1.1"
+gem "web-push", "~> 3.0"
+
+gem "serviceworker-rails", "~> 0.6.0"

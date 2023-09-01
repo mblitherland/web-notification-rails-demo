@@ -18,5 +18,7 @@ module WebNotificationRails
     #
     # config.time_zone = "Central Time (US & Canada)"
     # config.eager_load_paths << Rails.root.join("extras")
+    config.vapid_public_key = "BHIGx9bAvOGx5x8eBCGQDLKPX7o-HYsxJnf9SMxmBOh6RtlrC-uZ2J9bLAoNkSVF6mtTc600-xgPkGa7Rlpt4wk="
+    config.vapid_private_key = "7CDsnwhmZdXUwrrfUjP15V-8JGFpvqaG-yLdvcBHNAc="
   end
 end
