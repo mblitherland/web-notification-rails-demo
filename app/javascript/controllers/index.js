@@ -6,3 +6,11 @@ import { application } from "./application"
 
 import HelloController from "./hello_controller"
 application.register("hello", HelloController)
+
+
+if (navigator.serviceWorker) {
+  navigator.serviceWorker.register('/serviceworker.js', { scope: './' })
+    .then(function(reg) {
+      console.log('[Companion]', 'Service worker registered!');
+    });
+}
