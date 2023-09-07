@@ -1,1 +1,88 @@
-<h1>Home</1>
+<h1>Home</h1>
+<div class="card mt-3" style="width: 100%;">
+  <div class="card-header">
+    Actions
+  </div>
+  <div class="card-body">
+    <button class="btn btn-primary" onclick="wnEnable()" <%= @push_info[:enabled] ? "disabled" : "" %>>Enable Web push</button>
+    <button class="btn btn-primary" onclick="wnDisable()" <%= @push_info[:enabled] ? "" : "disabled" %>>Disable Web push</button>
+    <%= form_with url: "/push_to_me" do |f| %>
+      <div class="input-group mt-3">
+        <%= f.text_field :message, class: "form-control" %>
+        <%= f.submit "notify me!", class: "btn btn-outline-primary" %>
+      </div>
+    <% end %>
+    <%= form_with url: "/push_to_all" do |f| %>
+      <div class="input-group mt-3">
+        <%= f.text_field :message, class: "form-control" %>
+        <%= f.submit "notify everyone!", class: "btn btn-outline-primary"  %>
+      </div>
+    <% end %>
+  </div>
+</div>
+<div class="card mt-3" style="width: 100%;">
+  <div class="card-header">
+    Settings we know
+  </div>
+  <div class="card-body">
+    <div class="card-text">
+      <ul>
+        <li>pub-key: <%= @pub_key %></li>
+        <li>priv-key: <%= @priv_key %></li>
+        <li>enabled: <%= @push_info[:enabled] %></li>
+        <% if @push_info[:enabled] %>
+          <li>endpoint: <%= @push_info[:endpoint] %></li>
+          <li>p256dh: <%= @push_info[:p256dh] %></li>
+          <li>auth: <%= @push_info[:auth] %></li>
+        <% end %>
+      </ul>
+    </div>
+  </div>
+</div>
+<script>
+  async function wnEnable() {
+    const vapidPublicKey = new Uint8Array(<%= Base64.urlsafe_decode64(@pub_key).bytes %>);
+    const sw = await navigator.serviceWorker.ready
+    await sw.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: vapidPublicKey
+    });
+    const subscription = await sw.pushManager.getSubscription();
+    const data = subscription ? subscription.toJSON() : null;
+    if (data) {
+      const method = 'POST';
+      const headers = {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+      }
+      const payload = {
+        endpoint: data.endpoint,
+        p256dh: data.keys.p256dh,
+        auth: data.keys.auth
+      }
+      const body = JSON.stringify(payload);
+      await fetch('/enable', { method, headers, body });
+      window.location.reload();
+    } else {
+      alert("Did not manage to subscribe!");
+    }
+  }
+  async function wnDisable() {
+    const sw = await navigator.serviceWorker.ready
+    const subscription = await sw.pushManager.getSubscription();
+    if (!subscription == null) {
+      const status = await subscription.unsubscribe();
+      console.log('[WN]', 'Unsubscribe status: ' + status)
+    } else {
+      console.log('[WN]', 'No subscription');
+    }
+    const method = 'POST';
+    const headers = {
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+    }
+    const body = JSON.stringify({});
+    await fetch('/disable', { method, headers, body });
+    window.location.reload();
+  }
+</script>
