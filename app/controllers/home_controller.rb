@@ -49,19 +49,32 @@ class HomeController < ApplicationController
   private
 
   def send_sub(message, sub)
-    WebPush.payload_send(
-      message: message,
-      endpoint: sub[:endpoint],
-      p256dh: sub[:p256dh],
-      auth: sub[:auth],
-      vapid: {
-        subject: "mailto: michael.litherland@gmail.com",
-        public_key: Rails.configuration.vapid_public_key,
-        private_key: Rails.configuration.vapid_private_key
-      },
-      ssl_timeout: 5,
-      open_timeout: 5,
-      read_timeout: 5
-    )
+    begin
+      WebPush.payload_send(
+        message: message,
+        endpoint: sub[:endpoint],
+        p256dh: sub[:p256dh],
+        auth: sub[:auth],
+        vapid: {
+          subject: 'mailto: michael.litherland@gmail.com',
+          public_key: Rails.configuration.vapid_public_key,
+          private_key: Rails.configuration.vapid_private_key
+        },
+        ssl_timeout: 5,
+        open_timeout: 5,
+        read_timeout: 5
+      )
+    rescue WebPush::Unauthorized
+      sub[:enabled] = false
+      sub[:disable_reason] = 'Unauthorized exception'
+      sub.save
+    rescue WebPush::ExpiredSubscription
+      sub[:enabled] = false
+      sub[:disable_reason] = 'Expired exception'
+      sub.save
+    rescue => e
+      sub[:enabled] = false
+      sub[:disable_reason] = "Unhandled exception #{e}"
+    end
   end
 end
