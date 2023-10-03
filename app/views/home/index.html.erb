@@ -4,8 +4,8 @@
     Actions
   </div>
   <div class="card-body">
-    <button class="btn btn-primary" onclick="wnEnable()" <%= @push_info[:enabled] ? "disabled" : "" %>>Enable Web push</button>
-    <button class="btn btn-primary" onclick="wnDisable()" <%= @push_info[:enabled] ? "" : "disabled" %>>Disable Web push</button>
+    <button class="btn btn-primary" onclick="wnEnable()" id="enablePush">Enable Web push</button>
+    <button class="btn btn-primary" onclick="wnDisable()" id="disablePush">Disable Web push</button>
     <%= form_with url: "/push_to_me" do |f| %>
       <div class="input-group mt-3">
         <%= f.text_field :message, class: "form-control" %>
@@ -20,26 +20,39 @@
     <% end %>
   </div>
 </div>
-<div class="card mt-3" style="width: 100%;">
-  <div class="card-header">
-    Settings we know
-  </div>
-  <div class="card-body">
-    <div class="card-text">
-      <ul>
-        <li>pub-key: <%= @pub_key %></li>
-        <li>priv-key: <%= @priv_key %></li>
-        <li>enabled: <%= @push_info[:enabled] %></li>
-        <% if @push_info[:enabled] %>
-          <li>endpoint: <%= @push_info[:endpoint] %></li>
-          <li>p256dh: <%= @push_info[:p256dh] %></li>
-          <li>auth: <%= @push_info[:auth] %></li>
-        <% end %>
-      </ul>
-    </div>
-  </div>
+<div class="h5 mt-3">
+  Settings we know
 </div>
+<ul>
+  <li>pub-key: <%= @pub_key %></li>
+</ul>
+<% @subs_info.each do |sub| %>
+  <div class="card w-100 mb-3">
+    <div class="card-header">
+      Browser Info: <%= sub[:user_agent] %>
+    </div>
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">enabled? <%= sub[:enabled] %>
+      <li class="list-group-item">endpoint: <%= sub[:endpoint] %></li>
+      <li class="list-group-item">p256dh: <%= sub[:p256dh] %></li>
+      <li class="list-group-item">auth: <%= sub[:auth] %></li>
+    </ul>
+  </div>
+<% end %>
 <script>
+  async function checkEnabled() {
+    if (Notification?.permission == "granted") {
+      const sw = await navigator.serviceWorker.ready
+      const subscription = await sw.pushManager.getSubscription();
+      if (subscription != null) {
+        document.getElementById('enablePush').disabled = true;
+      } else {
+        document.getElementById('disablePush').disabled = true;
+      }
+    } else {
+      document.getElementById('disablePush').disabled = true;
+    }
+  }
   async function wnEnable() {
     const vapidPublicKey = new Uint8Array(<%= Base64.urlsafe_decode64(@pub_key).bytes %>);
     const sw = await navigator.serviceWorker.ready
@@ -56,6 +69,7 @@
         'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
       }
       const payload = {
+        user_agent: navigator['userAgent'],
         endpoint: data.endpoint,
         p256dh: data.keys.p256dh,
         auth: data.keys.auth
@@ -68,21 +82,29 @@
     }
   }
   async function wnDisable() {
+    // debugger;
     const sw = await navigator.serviceWorker.ready
     const subscription = await sw.pushManager.getSubscription();
-    if (!subscription == null) {
+    const endpoint = subscription.endpoint;
+    console.log('[WN]', endpoint);
+    if (subscription == null) {
+      console.log('[WN]', 'No subscription');
+    } else {
       const status = await subscription.unsubscribe();
       console.log('[WN]', 'Unsubscribe status: ' + status)
-    } else {
-      console.log('[WN]', 'No subscription');
     }
     const method = 'POST';
     const headers = {
       'Content-Type': 'application/json',
       'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
     }
-    const body = JSON.stringify({});
+    const payload = {
+      user_agent: navigator['userAgent'],
+      endpoint: endpoint
+    }
+    const body = JSON.stringify(payload);
     await fetch('/disable', { method, headers, body });
     window.location.reload();
   }
+  checkEnabled();
 </script>
