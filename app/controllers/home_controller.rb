@@ -49,7 +49,7 @@ class HomeController < ApplicationController
   private
 
   def send_sub(message, sub)
-    result = WebPush.payload_send(
+    WebPush.payload_send(
       message: message,
       endpoint: sub[:endpoint],
       p256dh: sub[:p256dh],
